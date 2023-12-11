@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root:alpine@localhost:3306/timesheet"
+}
+
+
+// Employee table
+model Employee {
+  EmployeeID     Int      @id @default(autoincrement())
+  FirstName      String
+  LastName       String
+  Email          String    @unique
+  Password       String
+  Admin          Boolean
+  EmployeeType   String   // Assuming "regular" or "manager"
+   clientId       Int?     // Nullable field if applicable
+  // Default Values
+  DefaultHours    Float    @default(8)                 
+  DefaultProject  String   @default("")  
+  DefaultClient   String   @default("")   
+// Derived field for full name
+  name            String   @map("concat(FirstName, ' ', LastName)")
+
+  // Relationships
+  Timesheets         Timesheet[]
+  managingEmployees  ManagerEmployee[] @relation("ManagerEmployees_manager")
+  employeesManagedBy ManagerEmployee[] @relation("ManagerEmployees_employee")
+}
+
+// Client table
+model Client {
+  ClientID      Int      @id @default(autoincrement())
+  ClientName    String
+  ContactPerson String
+  ContactEmail  String
+
+  // Relationships
+  Projects Project[]
+}
+
+// Project table
+model Project {
+  ProjectID   Int      @id @default(autoincrement())
+  ProjectName String
+  ClientID    Int
+
+  // Relationships
+  Client     Client      @relation(fields: [ClientID], references: [ClientID])
+  Timesheets Timesheet[]
+}
+
+// Timesheet table
+model Timesheet {
+  TimesheetID Int      @id @default(autoincrement())
+  EmployeeID  Int
+  ProjectID   Int
+  Date        DateTime
+  Status      String
+  HoursWorked Float
+  Description String
+
+  // Relationships
+  Employee Employee @relation(fields: [EmployeeID], references: [EmployeeID])
+  Project  Project  @relation(fields: [ProjectID], references: [ProjectID])
+}
+
+// ManagerEmployee table
+model ManagerEmployee {
+  managerId  Int // Manager ID
+  employeeId Int // Employee ID
+
+  // Relationships
+  manager  Employee @relation("ManagerEmployees_manager", fields: [managerId], references: [EmployeeID])
+  employee Employee @relation("ManagerEmployees_employee", fields: [employeeId], references: [EmployeeID])
+
+  // Composite primary key
+  @@id([employeeId, managerId])
+}
+
+
